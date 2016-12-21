@@ -30,6 +30,8 @@ public class HomeController {
 
         model.addAttribute("userList",userList);
 
+        model.addAttribute("Name","Anjula");
+
         return "index";
     }
 
