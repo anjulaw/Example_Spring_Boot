@@ -1,7 +1,7 @@
 /**
  * Created by Anjulaw on 12/26/2016.
  */
-var ISSUE_URL="http://localhost:8080/api/getIssue?issueId=123";
+var ISSUE_URL="http://localhost:8080/api/getIssue?issueId=82482";
 
 $( document ).ready(function() {
 
