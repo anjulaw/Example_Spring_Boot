@@ -23,8 +23,8 @@ public class HomeController {
     @Autowired
     Environment env;
 
-    @Autowired
-    UserRepository userRepository;
+    //@Autowired
+    //UserRepository userRepository;
 
     @RequestMapping("/")
     public String index(Model model, HttpServletRequest request, HttpServletResponse response) {
@@ -51,7 +51,7 @@ public class HomeController {
     public String addUser(@ModelAttribute("SpringWeb")User userObject, Model model, HttpServletRequest request, HttpServletResponse response){
 
 
-        userRepository.save(userObject);
+        //userRepository.save(userObject);
 
         return "users";
     }

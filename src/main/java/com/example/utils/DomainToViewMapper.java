@@ -1,8 +1,8 @@
 package com.example.utils;
 
 import com.example.domain.Issue;
-import com.example.domain.TotalBugCount;
-import com.example.view.InvalidDefectsView;
+import com.example.domain.Bug;
+import com.example.view.BugView;
 import com.example.view.IssueView;
 
 /**
@@ -17,10 +17,5 @@ public class DomainToViewMapper {
         return vw;
     }
 
-    public static InvalidDefectsView mapDomainTotalBugCountToView(TotalBugCount domainTotalBugCount){
 
-        InvalidDefectsView invalidDefects = new InvalidDefectsView();
-        invalidDefects.getTotalBugCount();
-        return invalidDefects;
-    }
 }

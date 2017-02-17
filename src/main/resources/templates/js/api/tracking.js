@@ -1,14 +1,19 @@
 /**
  * Created by Anjulaw on 12/26/2016.
  */
-var ISSUE_URL="http://localhost:8080/api/getIssue?issueId=82482";
+var INVALID_BUG_RATIO_URL="http://localhost:8080/api/getInvalidCount?total=1";
 
 $( document ).ready(function() {
 
 
+
+});
+
+function getInvalidBugRatio(){
+
     $.ajax({
         method: "GET",
-        url: ISSUE_URL,
+        url: INVALID_BUG_RATIO_URL,
         dataType: 'json',
     })
         .error(function() {
@@ -16,10 +21,11 @@ $( document ).ready(function() {
         })
         .done(function(data) {
 
+           if(data!=null){
 
-            alert("Issue id is :-"+data.id);
+               alert(data.invalidBugCountRatio);
+           }
         });
 
-
-});
+}
 

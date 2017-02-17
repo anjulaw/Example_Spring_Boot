@@ -1,17 +1,17 @@
 package com.example.domain;
 
-import javax.persistence.Entity;
+/*import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.Table;*/
 
 /**
  * Created by Anjulaw on 12/26/2016.
  */
-@Entity
-@Table(name = "user")
+//@Entity
+//@Table(name = "user")
 public class User {
 
-    @Id
+   /* @Id*/
     int id;
     String email;
 

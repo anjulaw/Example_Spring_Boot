@@ -14,5 +14,7 @@ public class WebConstants {
     public static final String STATIC_WEB_HTML_RESOURCES = "static.web.html.resources";
     public static final String STATIC_WEB_CSS_JS_RESOURCES = "static.web.css_js.resources";
 
+    public static final String CREDENTIALS="credentials";
+
 
 }

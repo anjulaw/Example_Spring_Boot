@@ -3,6 +3,11 @@ package com.example.config;
 import com.example.utils.WebConstants;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.TrustStrategy;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -10,8 +15,12 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -20,6 +29,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.view.JstlView;
 import org.springframework.web.servlet.view.UrlBasedViewResolver;
 
+import javax.net.ssl.SSLContext;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 /**
@@ -27,7 +38,7 @@ import java.util.List;
  */
 @Configuration
 @EnableWebMvc
-@ComponentScan({ "com.example" })
+@ComponentScan({"com.example"})
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
     @Autowired
@@ -42,7 +53,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
 
         String staticHtmlPath = env.getProperty(WebConstants.STATIC_WEB_HTML_RESOURCES);
-        String staticCssPath  = env.getProperty(WebConstants.STATIC_WEB_CSS_JS_RESOURCES);
+        String staticCssPath = env.getProperty(WebConstants.STATIC_WEB_CSS_JS_RESOURCES);
 
 
         if (staticHtmlPath != null) {
@@ -55,7 +66,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    @DependsOn({ "jstlViewResolver" })
+    @DependsOn({"jstlViewResolver"})
     public ViewResolver viewResolver() {
         return jstlViewResolver;
     }
@@ -67,6 +78,57 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
         resolver.setViewClass(JstlView.class);
         resolver.setSuffix(".html"); // NOTE: no suffix here
         return resolver;
+    }
+
+    @Bean(name = "qMetrixHttpEntity")
+    public HttpEntity qMetrixHttpEntity() {
+
+        String plainCreds = env.getProperty(WebConstants.CREDENTIALS);
+        byte[] plainCredsBytes = plainCreds.getBytes();
+        byte[] base64CredsBytes = Base64.encodeBase64(plainCredsBytes);
+        String base64Creds = new String(base64CredsBytes);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Basic " + base64Creds);
+        HttpEntity<String> request = new HttpEntity<String>(headers);
+
+        return request;
+    }
+
+    @Bean(name = "resTemplate")
+    public RestTemplate restTemplate() {
+
+        try {
+
+
+            TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
+
+            SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+                    .loadTrustMaterial(null, acceptingTrustStrategy)
+                    .build();
+
+            SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
+
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setSSLSocketFactory(csf)
+                    .build();
+
+            HttpComponentsClientHttpRequestFactory requestFactory =
+                    new HttpComponentsClientHttpRequestFactory();
+
+            requestFactory.setHttpClient(httpClient);
+
+            RestTemplate restTemplate = new RestTemplate(requestFactory);
+
+            return restTemplate;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+        return null;
+
     }
 
     @Override
@@ -81,14 +143,13 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
      * @param converters
      */
     @Override
-    public void configureMessageConverters( List<HttpMessageConverter<?>> converters )
-    {
+    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
         final MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion( JsonInclude.Include.USE_DEFAULTS );
-        converter.setObjectMapper( objectMapper );
-        converters.add( converter );
-        super.configureMessageConverters( converters );
+        objectMapper.setSerializationInclusion(JsonInclude.Include.USE_DEFAULTS);
+        converter.setObjectMapper(objectMapper);
+        converters.add(converter);
+        super.configureMessageConverters(converters);
     }
 
 
