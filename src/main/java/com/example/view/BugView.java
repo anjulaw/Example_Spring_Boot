@@ -8,6 +8,7 @@ import java.io.Serializable;
 public class BugView implements Serializable {
 
     private double invalidBugCountRatio;
+    private double defectRemovalEfficiency;
 
     public double getInvalidBugCountRatio() {
         return invalidBugCountRatio;
@@ -15,5 +16,13 @@ public class BugView implements Serializable {
 
     public void setInvalidBugCountRatio(double invalidBugCountRatio) {
         this.invalidBugCountRatio = invalidBugCountRatio;
+    }
+
+    public double getDefectRemovalEfficiency() {
+        return defectRemovalEfficiency;
+    }
+
+    public void setDefectRemovalEfficiency(double defectRemovalEfficiency) {
+        this.defectRemovalEfficiency = defectRemovalEfficiency;
     }
 }

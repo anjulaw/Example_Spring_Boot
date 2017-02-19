@@ -80,8 +80,8 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
         return resolver;
     }
 
-    @Bean(name = "qMetrixHttpEntity")
-    public HttpEntity qMetrixHttpEntity() {
+    @Bean(name = "qaMetrixHttpEntity")
+    public HttpEntity qaMetrixHttpEntity() {
 
         String plainCreds = env.getProperty(WebConstants.CREDENTIALS);
         byte[] plainCredsBytes = plainCreds.getBytes();

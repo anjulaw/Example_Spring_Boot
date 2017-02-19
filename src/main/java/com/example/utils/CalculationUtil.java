@@ -15,9 +15,21 @@ public class CalculationUtil {
 
         BugView bgView = new BugView();
 
-        double ratio  = (invalidBugObject.getTotal() / totalBugObject.getTotal() * 100);
+        double ratio  = ((invalidBugObject.getTotal() / totalBugObject.getTotal()) * 100);
 
         bgView.setInvalidBugCountRatio(ratio);
         return bgView;
+    }
+
+    public static BugView caldefectRemovalEfficiency (Bug totaldefectQA, Bug totalDefectEndUser){
+
+        BugView bugView = new BugView();
+
+        int totalBugCount = totaldefectQA.getTotal() + totalDefectEndUser.getTotal();
+
+        double defectRemovalEfficiencyRatio = ((totaldefectQA.getTotal() / totalBugCount) * 100 );
+
+        bugView.setDefectRemovalEfficiency(defectRemovalEfficiencyRatio);
+        return bugView;
     }
 }

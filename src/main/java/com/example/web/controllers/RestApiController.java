@@ -41,50 +41,12 @@ public class RestApiController {
     RestTemplate resTemplate;
 
     @Autowired
-    HttpEntity qMetrixHttpEntity;
-
-
-    @RequestMapping("/getIssue")
-    public IssueView test(@RequestParam(name = "issueId") String issueId) {
-
-        final String uri = "http://codegen.atlassian.net/rest/api/2/search?jql=createdDate%20%3E%3D%202016-12-01%20AND%20createdDate%20%3C%3D%202016-12-31%20AND%20reporter%20in%20(%22sachini%40codegen.net%22)&fields=key&maxResults=100";
-
-         /*Map<String, String> params = new HashMap<String, String>();
-        params.put("issueId", issueId);
-
-        RestTemplate restTemplate = new RestTemplate();
-        Issue result = restTemplate.getForObject(uri, Issue.class, params);
-
-        System.out.println(result);*/
-
-        String plainCreds = "anjulaw@codegen.net:Suraj@123";
-        byte[] plainCredsBytes = plainCreds.getBytes();
-        byte[] base64CredsBytes = Base64.encodeBase64(plainCredsBytes);
-        String base64Creds = new String(base64CredsBytes);
-
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Basic " + base64Creds);
-
-        HttpEntity<String> request = new HttpEntity<String>(headers);
-        ResponseEntity<Issue> response = restTemplate.exchange(uri, HttpMethod.GET, request, Issue.class);
-        Issue issue = response.getBody();
-
-        if (issue != null) {
-
-            IssueView vw = DomainToViewMapper.mapDomainIssueToView(issue);
-            return vw;
-        }
-        return null;
-    }
-
+    HttpEntity qaMetrixHttpEntity;
 
     @RequestMapping("/getInvalidCount")
-    public BugView invalidDefects(@RequestParam(name = "total") String total) {
+    public BugView invalidDefects(@RequestParam(name = "createdDate") String createdDate) {
 
         try {
-
-           /*final String totalBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate%20%3E%3D%202016-12-01%20AND%20createdDate%20%3C%3D%202016-12-31%20AND%20reporter%20in%20(%22sachini%40codegen.net%22)&fields=key&maxResults=100";*/
 
             final String totalBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2016-12-01 AND createdDate <= 2016-12-31 AND reporter in (\"sachini@codegen.net\")&fields=key&maxResults=100";
 
@@ -92,16 +54,16 @@ public class RestApiController {
             final String invalidBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2016-12-01 AND createdDate <= 2016-12-31 AND reporter in (\"sachini@codegen.net\")&fields=key&maxResults=100";
 
 
-            ResponseEntity<Bug> totalBugCountResponse = resTemplate.exchange(totalBugCountUrl, HttpMethod.GET,qMetrixHttpEntity, Bug.class);
+            ResponseEntity<Bug> totalBugCountResponse = resTemplate.exchange(totalBugCountUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
             Bug bugCountObject = totalBugCountResponse.getBody();
             if (bugCountObject != null) {
 
-                ResponseEntity<Bug> invalidBugCountResponse = resTemplate.exchange(invalidBugCountUrl, HttpMethod.GET, qMetrixHttpEntity, Bug.class);
+                ResponseEntity<Bug> invalidBugCountResponse = resTemplate.exchange(invalidBugCountUrl, HttpMethod.GET, qaMetrixHttpEntity, Bug.class);
                 Bug bugCountInvalid = invalidBugCountResponse.getBody();
 
-                BugView bugView = CalculationUtil.calInvalidBugRatio(bugCountObject, bugCountInvalid);
+                BugView bugViewinvalidDefects = CalculationUtil.calInvalidBugRatio(bugCountObject, bugCountInvalid);
 
-                return bugView;
+                return bugViewinvalidDefects;
 
             }
 
@@ -112,6 +74,36 @@ public class RestApiController {
 
         return null;
 
+    }
+
+
+    @RequestMapping("/getDefectRemoval")
+    public BugView defectRemoval (@RequestParam(name="issuetype") String issuetype) {
+        try{
+
+            final String defectQATestUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" in (TA) AND issuetype in (\"Local Issue\") AND createdDate >= 2017-01-01 AND createdDate <= 2017-01-31&fields=key&maxResults=100";
+
+            final String defectEndUserUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2017-01-01 AND createdDate <= 2017-01-31 AND  project  = \"Tour America\" AND level = EXTERNAL AND type in (\"Production Issue\",\"Non-Prod Issue\",Clarification)&fields=key&maxResults=100";
+
+            ResponseEntity<Bug> defectQAResponse = resTemplate.exchange(defectQATestUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+            Bug defectQAObject = defectQAResponse.getBody();
+
+            if (defectQAObject !=null){
+
+                ResponseEntity<Bug> defectEndUserResponse = resTemplate.exchange(defectEndUserUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                Bug defectEndUserObject = defectEndUserResponse.getBody();
+
+                BugView bugViewdefectRemoval = CalculationUtil.caldefectRemovalEfficiency(defectQAObject,defectEndUserObject);
+
+                return bugViewdefectRemoval;
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
 
