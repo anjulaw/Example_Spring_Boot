@@ -80,6 +80,8 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
         return resolver;
     }
 
+
+
     @Bean(name = "qaMetrixHttpEntity")
     public HttpEntity qaMetrixHttpEntity() {
 
@@ -94,6 +96,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
         return request;
     }
+
 
     @Bean(name = "resTemplate")
     public RestTemplate restTemplate() {

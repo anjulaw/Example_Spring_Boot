@@ -106,5 +106,32 @@ public class RestApiController {
         return null;
     }
 
+    @RequestMapping("/getDefectLeakage")
+    public BugView defectLeakage(@RequestParam(name="issuetype") String issuetype){
+        try{
+
+            final String defectsFoundUAT = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2017-01-01 AND createdDate <= 2017-01-31 AND  project  = \"Tour America\" AND level = EXTERNAL AND type in (\"Non-Prod Issue\")";
+
+            final String defectsFoundQA = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" in (TA) AND issuetype in (\"Local Issue\") AND createdDate >= 2017-01-01 AND createdDate <= 2017-01-31";
+
+            ResponseEntity<Bug> defectFoundUATResponse = resTemplate.exchange(defectsFoundUAT, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+            Bug defectFoundUATObject = defectFoundUATResponse.getBody();
+
+            if(defectFoundUATObject !=null){
+
+                ResponseEntity<Bug> defectsFoundQAResponse = resTemplate.exchange(defectsFoundQA, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                Bug defectsFoundQAObject = defectsFoundQAResponse.getBody();
+
+                BugView bugViewDefectLeakage = CalculationUtil.calDefectLeakage(defectFoundUATObject,defectsFoundQAObject);
+                return bugViewDefectLeakage;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
 
 }

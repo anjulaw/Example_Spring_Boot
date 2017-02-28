@@ -25,11 +25,22 @@ public class CalculationUtil {
 
         BugView bugView = new BugView();
 
-        int totalBugCount = totaldefectQA.getTotal() + totalDefectEndUser.getTotal();
+        double totalBugCount = totaldefectQA.getTotal() + totalDefectEndUser.getTotal();
 
         double defectRemovalEfficiencyRatio = ((totaldefectQA.getTotal() / totalBugCount) * 100 );
 
         bugView.setDefectRemovalEfficiency(defectRemovalEfficiencyRatio);
         return bugView;
+    }
+
+    public static BugView calDefectLeakage (Bug defectFoundUAT,Bug defectFoundQA){
+
+        BugView bugView = new BugView();
+
+        double defectLeakageRatio = ((defectFoundUAT.getTotal() / defectFoundQA.getTotal()) * 100);
+
+        bugView.setDefectLeackageRatio(defectLeakageRatio);
+        return bugView;
+
     }
 }

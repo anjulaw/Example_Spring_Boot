@@ -7,13 +7,13 @@ import java.io.Serializable;
  */
 public class Bug implements Serializable {
 
-    private int total;
+    private double total;
 
-    public int getTotal() {
+    public double getTotal() {
         return total;
     }
 
-    public void setTotal(int total) {
+    public void setTotal(double total) {
         this.total = total;
     }
 }

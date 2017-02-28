@@ -3,6 +3,7 @@
  */
 var INVALID_BUG_RATIO_URL="http://localhost:8080/api/getInvalidCount?createdDate=1";
 var DEFECT_REMOVAL_RATIO_URL = "http://localhost:8080/api/getDefectRemoval?issuetype=ta";
+var DEFECT_LEAKAGE_RATIO_URL = "http://localhost:8080/api/getDefectLeakage?issuetype=ta";
 
 $( document ).ready(function() {
 
@@ -47,6 +48,23 @@ function getDefectRemovalRatio() {
                 alert(data.defectRemovalEfficiency);
             }
         });
-
 }
 
+function getDefectLeakageRatio() {
+
+    $.ajax({
+        method: "GET",
+        url: DEFECT_LEAKAGE_RATIO_URL,
+        dataType: 'json',
+    })
+        .error(function() {
+            alert("ERROR");
+        })
+        .done(function(data) {
+
+            if(data!=null){
+
+                alert(data.defectLeackageRatio);
+            }
+        });
+}
