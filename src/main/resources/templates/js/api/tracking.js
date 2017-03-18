@@ -67,4 +67,6 @@ function getDefectLeakageRatio() {
                 alert(data.defectLeackageRatio);
             }
         });
+
+
 }

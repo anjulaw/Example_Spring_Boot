@@ -10,6 +10,24 @@ public class BugView implements Serializable {
     private double invalidBugCountRatio;
     private double defectRemovalEfficiency;
     private double defectLeackageRatio;
+    private double effortVarianceRatio;
+    private double defectSeverityIndexRatio;
+
+    public double getEffortVarianceRatio() {
+        return effortVarianceRatio;
+    }
+
+    public void setEffortVarianceRatio(double effortVarianceRatio) {
+        this.effortVarianceRatio = effortVarianceRatio;
+    }
+
+    public double getDefectSeverityIndexRatio() {
+        return defectSeverityIndexRatio;
+    }
+
+    public void setDefectSeverityIndexRatio(double defectSeverityIndexRatio) {
+        this.defectSeverityIndexRatio = defectSeverityIndexRatio;
+    }
 
     public double getInvalidBugCountRatio() {
         return invalidBugCountRatio;
@@ -35,4 +53,8 @@ public class BugView implements Serializable {
 
         this.defectLeackageRatio = defectLeackageRatio;
     }
+
+
+
+
 }

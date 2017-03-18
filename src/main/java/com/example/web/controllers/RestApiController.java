@@ -15,9 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.HostnameVerifier;
@@ -25,7 +23,8 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Created by Anjulaw on 12/26/2016.
@@ -43,28 +42,76 @@ public class RestApiController {
     @Autowired
     HttpEntity qaMetrixHttpEntity;
 
-    @RequestMapping("/getInvalidCount")
-    public BugView invalidDefects(@RequestParam(name = "createdDate") String createdDate) {
+    @RequestMapping(value ="/getInvalidCount", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public List<BugView> invalidDefects(/*@RequestParam(name = "createdDate") String createdDate*/) {
 
         try {
 
-            final String totalBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2016-12-01 AND createdDate <= 2016-12-31 AND reporter in (\"sachini@codegen.net\")&fields=key&maxResults=100";
+            // Calculate the date differnce between Start and End Date
+            String start = "2016-01-01";
+            String end = "2016-12-31";
+            String user = "anjulaw@codegen.net";
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date startDate = sdf.parse(start);
+            Date endDate = sdf.parse(end);
+
+            Calendar startCalendar = new GregorianCalendar();
+            startCalendar.setTime(startDate);
+            Calendar endCalendar = new GregorianCalendar();
+            endCalendar.setTime(endDate);
+
+            int diffYear = endCalendar.get(Calendar.YEAR) - startCalendar.get(Calendar.YEAR);
+            int diffMonth = diffYear * 12 + endCalendar.get(Calendar.MONTH) - startCalendar.get(Calendar.MONTH);
+
+            System.out.println("Month diff" + diffMonth);
+
+            List<String> dateList = new ArrayList<>();
+            String date = sdf.format(startDate);
+            dateList.add(date);
+
+            Date initialDate = startDate;
+            for (int i = 0; i < diffMonth; i++) {
+
+                Calendar c = Calendar.getInstance();
+                c.setTime(initialDate);
+                c.add(Calendar.MONTH, 1);  // number of days to add
+
+                initialDate = c.getTime();
+                String datex = sdf.format(initialDate);
+                dateList.add(datex);
+            }
+
+            List<BugView> bugVierwList = new ArrayList<>();
+
+            for (int i = 0; i < dateList.size()-1; i++){
+
+                final String totalBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+" AND reporter in (\"anjulaw@codegen.net\")&fields=key&maxResults=100";
+                System.out.println( "Total Bug Count"+totalBugCountUrl);
 
 
-            final String invalidBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2016-12-01 AND createdDate <= 2016-12-31 AND reporter in (\"sachini@codegen.net\")&fields=key&maxResults=100";
+                final String invalidBugCountUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+" AND reporter in (\"anjulaw@codegen.net\")&fields=key&maxResults=100";
+                System.out.println("Total Invalid Bug count"+invalidBugCountUrl);
 
+                ResponseEntity<Bug> totalBugCountResponse = resTemplate.exchange(totalBugCountUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                Bug bugCountObject = totalBugCountResponse.getBody();
+                if (bugCountObject != null) {
 
-            ResponseEntity<Bug> totalBugCountResponse = resTemplate.exchange(totalBugCountUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
-            Bug bugCountObject = totalBugCountResponse.getBody();
-            if (bugCountObject != null) {
+                    ResponseEntity<Bug> invalidBugCountResponse = resTemplate.exchange(invalidBugCountUrl, HttpMethod.GET, qaMetrixHttpEntity, Bug.class);
+                    Bug bugCountInvalid = invalidBugCountResponse.getBody();
 
-                ResponseEntity<Bug> invalidBugCountResponse = resTemplate.exchange(invalidBugCountUrl, HttpMethod.GET, qaMetrixHttpEntity, Bug.class);
-                Bug bugCountInvalid = invalidBugCountResponse.getBody();
+                    BugView bugViewinvalidDefects = CalculationUtil.calInvalidBugRatio(bugCountObject, bugCountInvalid);
 
-                BugView bugViewinvalidDefects = CalculationUtil.calInvalidBugRatio(bugCountObject, bugCountInvalid);
+                    bugVierwList.add(bugViewinvalidDefects);
+                    return bugVierwList;
 
-                return bugViewinvalidDefects;
+                }
 
+            }
+
+            for (BugView bugView : bugVierwList) {
+                System.out.println(bugView.getInvalidBugCountRatio());
             }
 
         } catch (Exception e) {
@@ -78,25 +125,70 @@ public class RestApiController {
 
 
     @RequestMapping("/getDefectRemoval")
-    public BugView defectRemoval (@RequestParam(name="issuetype") String issuetype) {
+    public List<BugView> defectRemoval (@RequestParam(name="issuetype") String issuetype) {
         try{
 
-            final String defectQATestUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" in (TA) AND issuetype in (\"Local Issue\") AND createdDate >= 2017-01-01 AND createdDate <= 2017-01-31&fields=key&maxResults=100";
+            String start = "2016-01-01";
+            String end = "2016-12-31";
+            String user = "anjulaw@codegen.net";
 
-            final String defectEndUserUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2017-01-01 AND createdDate <= 2017-01-31 AND  project  = \"Tour America\" AND level = EXTERNAL AND type in (\"Production Issue\",\"Non-Prod Issue\",Clarification)&fields=key&maxResults=100";
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date startDate = sdf.parse(start);
+            Date endDate = sdf.parse(end);
 
-            ResponseEntity<Bug> defectQAResponse = resTemplate.exchange(defectQATestUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
-            Bug defectQAObject = defectQAResponse.getBody();
+            Calendar startCalendar = new GregorianCalendar();
+            startCalendar.setTime(startDate);
+            Calendar endCalendar = new GregorianCalendar();
+            endCalendar.setTime(endDate);
 
-            if (defectQAObject !=null){
+            int diffYear = endCalendar.get(Calendar.YEAR) - startCalendar.get(Calendar.YEAR);
+            int diffMonth = diffYear * 12 + endCalendar.get(Calendar.MONTH) - startCalendar.get(Calendar.MONTH);
 
-                ResponseEntity<Bug> defectEndUserResponse = resTemplate.exchange(defectEndUserUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
-                Bug defectEndUserObject = defectEndUserResponse.getBody();
+            System.out.println("Month diff" + diffMonth);
 
-                BugView bugViewdefectRemoval = CalculationUtil.caldefectRemovalEfficiency(defectQAObject,defectEndUserObject);
+            List<String> dateList = new ArrayList<>();
+            String date = sdf.format(startDate);
+            dateList.add(date);
 
-                return bugViewdefectRemoval;
+            Date initialDate = startDate;
+            for (int i = 0; i < diffMonth; i++) {
 
+                Calendar c = Calendar.getInstance();
+                c.setTime(initialDate);
+                c.add(Calendar.MONTH, 1);  // number of days to add
+
+                initialDate = c.getTime();
+                String datex = sdf.format(initialDate);
+                dateList.add(datex);
+            }
+
+            List<BugView> bugVierwList = new ArrayList<>();
+
+            for (int i = 0; i < dateList.size()-1; i++){
+
+                final String defectQATestUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" in (TA) AND issuetype in (\"Local Issue\") AND createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+"&fields=key&maxResults=100";
+
+                final String defectEndUserUrl = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+" AND  project  = \"Tour America\" AND level = EXTERNAL AND type in (\"Production Issue\",\"Non-Prod Issue\",Clarification)&fields=key&maxResults=100";
+
+                ResponseEntity<Bug> defectQAResponse = resTemplate.exchange(defectQATestUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                Bug defectQAObject = defectQAResponse.getBody();
+
+                if (defectQAObject !=null){
+
+                    ResponseEntity<Bug> defectEndUserResponse = resTemplate.exchange(defectEndUserUrl, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                    Bug defectEndUserObject = defectEndUserResponse.getBody();
+
+                    BugView bugViewdefectRemoval = CalculationUtil.caldefectRemovalEfficiency(defectQAObject,defectEndUserObject);
+
+                    bugVierwList.add(bugViewdefectRemoval);
+                    return bugVierwList;
+
+                }
+
+            }
+
+            for (BugView bugView : bugVierwList) {
+                System.out.println(bugView.getInvalidBugCountRatio());
             }
 
         } catch (Exception e) {
@@ -107,24 +199,67 @@ public class RestApiController {
     }
 
     @RequestMapping("/getDefectLeakage")
-    public BugView defectLeakage(@RequestParam(name="issuetype") String issuetype){
+    public List<BugView> defectLeakage(@RequestParam(name="issuetype") String issuetype){
         try{
 
-            final String defectsFoundUAT = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= 2017-01-01 AND createdDate <= 2017-01-31 AND  project  = \"Tour America\" AND level = EXTERNAL AND type in (\"Non-Prod Issue\")";
+            String start = "2016-01-01";
+            String end = "2016-12-31";
+            String user = "anjulaw@codegen.net";
 
-            final String defectsFoundQA = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" in (TA) AND issuetype in (\"Local Issue\") AND createdDate >= 2017-01-01 AND createdDate <= 2017-01-31";
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date startDate = sdf.parse(start);
+            Date endDate = sdf.parse(end);
 
-            ResponseEntity<Bug> defectFoundUATResponse = resTemplate.exchange(defectsFoundUAT, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
-            Bug defectFoundUATObject = defectFoundUATResponse.getBody();
+            Calendar startCalendar = new GregorianCalendar();
+            startCalendar.setTime(startDate);
+            Calendar endCalendar = new GregorianCalendar();
+            endCalendar.setTime(endDate);
 
-            if(defectFoundUATObject !=null){
+            int diffYear = endCalendar.get(Calendar.YEAR) - startCalendar.get(Calendar.YEAR);
+            int diffMonth = diffYear * 12 + endCalendar.get(Calendar.MONTH) - startCalendar.get(Calendar.MONTH);
 
-                ResponseEntity<Bug> defectsFoundQAResponse = resTemplate.exchange(defectsFoundQA, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
-                Bug defectsFoundQAObject = defectsFoundQAResponse.getBody();
+            System.out.println("Month diff" + diffMonth);
 
-                BugView bugViewDefectLeakage = CalculationUtil.calDefectLeakage(defectFoundUATObject,defectsFoundQAObject);
-                return bugViewDefectLeakage;
+            List<String> dateList = new ArrayList<>();
+            String date = sdf.format(startDate);
+            dateList.add(date);
+
+            Date initialDate = startDate;
+            for (int i = 0; i < diffMonth; i++) {
+
+                Calendar c = Calendar.getInstance();
+                c.setTime(initialDate);
+                c.add(Calendar.MONTH, 1);  // number of days to add
+
+                initialDate = c.getTime();
+                String datex = sdf.format(initialDate);
+                dateList.add(datex);
             }
+
+            List<BugView> bugVierwList = new ArrayList<>();
+
+            for (int i = 0; i < dateList.size()-1; i++){
+
+                final String defectsFoundUAT = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+" AND  project  = \"Tour America\" AND level = EXTERNAL AND type in (\"Non-Prod Issue\")";
+
+                final String defectsFoundQA = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" in (TA) AND issuetype in (\"Local Issue\") AND createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+"";
+
+                ResponseEntity<Bug> defectFoundUATResponse = resTemplate.exchange(defectsFoundUAT, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                Bug defectFoundUATObject = defectFoundUATResponse.getBody();
+
+                if(defectFoundUATObject !=null){
+
+                    ResponseEntity<Bug> defectsFoundQAResponse = resTemplate.exchange(defectsFoundQA, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                    Bug defectsFoundQAObject = defectsFoundQAResponse.getBody();
+
+                    BugView bugViewDefectLeakage = CalculationUtil.calDefectLeakage(defectFoundUATObject,defectsFoundQAObject);
+                    bugVierwList.add(bugViewDefectLeakage);
+                    return bugVierwList;
+                }
+
+            }
+
+
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -133,5 +268,117 @@ public class RestApiController {
         return null;
     }
 
+
+    @RequestMapping("/getDefectSeverity")
+    public List<BugView> defectSeverity(@RequestParam(name = "createdDate") String createdDate){
+        try{
+
+            String start = "2016-01-01";
+            String end = "2016-12-31";
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date startDate = sdf.parse(start);
+            Date endDate = sdf.parse(end);
+
+            Calendar startCalendar = new GregorianCalendar();
+            startCalendar.setTime(startDate);
+            Calendar endCalendar = new GregorianCalendar();
+            endCalendar.setTime(endDate);
+
+            int diffYear = endCalendar.get(Calendar.YEAR) - startCalendar.get(Calendar.YEAR);
+            int diffMonth = diffYear * 12 + endCalendar.get(Calendar.MONTH) - startCalendar.get(Calendar.MONTH);
+
+            List<String> dateList = new ArrayList<>();
+            String date = sdf.format(startDate);
+            dateList.add(date);
+
+            Date initialDate = startDate;
+            for (int i = 0; i < diffMonth; i++) {
+
+                Calendar c = Calendar.getInstance();
+                c.setTime(initialDate);
+                c.add(Calendar.MONTH, 1);  // number of days to add
+
+                initialDate = c.getTime();
+                String datex = sdf.format(initialDate);
+                dateList.add(datex);
+            }
+
+            List<BugView> bugVierwList = new ArrayList<>();
+
+            for (int i = 0; i < dateList.size()-1; i++){
+
+                String defectPriority = "Blocker";
+
+                final String validDefectsSeverity = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+" AND resolution != Invalid AND priority = "+defectPriority+"";
+
+                final String totalValidDefects = "https://codegen.atlassian.net/rest/api/2/search?jql=createdDate >= "+dateList.get(i)+" AND createdDate <= "+dateList.get(i+1)+" AND resolution != Invalid";
+
+                ResponseEntity<Bug> validDefectsSeverityResponse = resTemplate.exchange(validDefectsSeverity, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                Bug validDefectsSeverityObject = validDefectsSeverityResponse.getBody();
+
+                if(validDefectsSeverityObject !=null){
+
+                    ResponseEntity<Bug> totalValidDefectsResponse = resTemplate.exchange(totalValidDefects, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+                    Bug totalValidDefectsyObject = totalValidDefectsResponse.getBody();
+
+                    BugView bugViewDefectSeverity = CalculationUtil.calDefectSeverity(validDefectsSeverityObject,totalValidDefectsyObject,defectPriority);
+                    bugVierwList.add(bugViewDefectSeverity);
+                    return bugVierwList;
+                }
+
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @RequestMapping("/getEffortVariance")
+    public List<BugView> effortVariance(@RequestParam(name = "createdDate") String createdDate){
+
+        try{
+
+            String startDate = "2017-01-01";
+            String endDate = "2017-01-31";
+
+            List<BugView> bugVierwList = new ArrayList<>();
+
+/*            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date startDate = sdf.parse(start);
+            Date endDate = sdf.parse(end);*/
+
+            final String effortURL = "https://codegen.atlassian.net/rest/api/2/search?jql=\"Project Ref\" = TA AND type = Story AND createdDate >= "+startDate+" AND createdDate <="+endDate+"&fields=key,aggregatetimespent,aggregatetimeoriginalestimate";
+
+            ResponseEntity<Bug> effortVarianceResponse = resTemplate.exchange(effortURL, HttpMethod.GET,qaMetrixHttpEntity, Bug.class);
+            Bug effortVarianceObject = effortVarianceResponse.getBody();
+
+            if(effortVarianceObject !=null){
+
+                double totalIssueCount = effortVarianceObject.getTotal();
+
+                for(int x=0;x<totalIssueCount;x++){
+
+                    BugView bugVieweffortVariance = CalculationUtil.caleffortVariance(effortVarianceObject);
+                    bugVierwList.add(bugVieweffortVariance);
+                    return bugVierwList;
+                }
+
+                for (int y=0; y<totalIssueCount; y++){
+                    List<String> issueList = new ArrayList<>();
+                    String issueID = effortVarianceObject.getKey();
+                    issueList.add(issueID);
+                }
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return null;
+
+    }
 
 }
